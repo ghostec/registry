@@ -1,6 +1,8 @@
 package main
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // MemoryStorage stores types data in memory and exposes methods to
 // perform CRUD operations over them
@@ -49,7 +51,7 @@ func (s *MemoryStorage) applyGetFilter(
 		f := t.Field(i)
 		for _, qq := range q {
 			if tag, ok := f.Tag.Lookup("registry"); ok && tag == qq.Field {
-				v := reflect.ValueOf(x).Elem().FieldByName(f.Name).Interface()
+				v := reflect.ValueOf(x).FieldByName(f.Name).Interface()
 				switch qq.Condition {
 				case Conditions.Equals:
 					return qq.Value == v

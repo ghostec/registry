@@ -1,5 +1,11 @@
 package main
 
+import (
+	"reflect"
+
+	"github.com/mohae/deepcopy"
+)
+
 // Type is the registered entity that holds the instructureion needed about
 // a custom struct in order to perform CRUD operation via registry.storage
 type Type struct {
@@ -16,7 +22,8 @@ type Type struct {
 
 // Create is a wrapper over t.registry.storage.Create
 func (t *Type) Create(data interface{}) error {
-	return t.registry.storage.Create(t, data)
+	cpy := reflect.Indirect(reflect.ValueOf(deepcopy.Copy(data))).Interface()
+	return t.registry.storage.Create(t, cpy)
 }
 
 // Get is a wrapper over t.registry.storage.Get

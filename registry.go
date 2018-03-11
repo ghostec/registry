@@ -1,5 +1,7 @@
 package main
 
+import "reflect"
+
 // Registry makes it easy to perform CRUD operations on any kind of
 // struct, by registering custom types and exposing registry.Type
 // from where to call Create, Get, Update and Delete
@@ -9,17 +11,27 @@ type Registry struct {
 	storage StorageEngine
 }
 
-// Type is the registered entity that holds the instructureion needed about
-// a custom struct in order to perform CRUD operation via registry.storage
-type Type struct {
-	name string
-	// structure is an instance of the underlying struct
-	structure interface{}
-	registry  *Registry
-	// storageCue is the information used by a StorageEngine implementation
-	// to access the Type's instances (eg. table name in Postgres)
-	storageCue   StorageCue
-	associations []Association
+// New is a Registry ctor
+func New(s StorageEngine) *Registry {
+	return &Registry{
+		storage: s,
+		types:   map[string]*Type{},
+	}
+}
+
+// NewType registers a new type in a Registry
+func (r *Registry) NewType(structure interface{}, cue StorageCue) (*Type, error) {
+	t := &Type{
+		structure:  structure,
+		registry:   r,
+		storageCue: cue,
+	}
+	name := reflect.TypeOf(structure).String()
+	if err := r.storage.NewType(t); err != nil {
+		return nil, err
+	}
+	r.types[name] = t
+	return t, nil
 }
 
 // QueryAttribute is used by StorageEngine to query instances of a Type
@@ -52,10 +64,4 @@ var Conditions = struct {
 	Equals: "equal",
 }
 
-// New is a Registry ctor
-func New(s StorageEngine) *Registry {
-	return &Registry{
-		storage: s,
-		types:   map[string]*Type{},
-	}
-}
+func main() {}

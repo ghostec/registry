@@ -44,12 +44,12 @@ func (s *MemoryStorage) Get(
 func (s *MemoryStorage) applyGetFilter(
 	x interface{}, q []QueryAttribute,
 ) bool {
-	t := reflect.TypeOf(x)
+	t := reflect.Indirect(reflect.ValueOf(x)).Type()
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		for _, qq := range q {
 			if tag, ok := f.Tag.Lookup("registry"); ok && tag == qq.Field {
-				v := reflect.ValueOf(x).FieldByName(f.Name).Interface()
+				v := reflect.ValueOf(x).Elem().FieldByName(f.Name).Interface()
 				switch qq.Condition {
 				case Conditions.Equals:
 					return qq.Value == v

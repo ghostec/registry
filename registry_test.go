@@ -17,7 +17,7 @@ var _ = Describe("Registry tests", func() {
 			TestType, err := r.NewType(&TestModel{}, "test_models")
 			Expect(err).NotTo(HaveOccurred())
 
-			TestType.Create(TestModel{
+			TestType.Create(&TestModel{
 				Name: "some name",
 			})
 			result, err := TestType.Get(QueryAttribute{
@@ -27,7 +27,7 @@ var _ = Describe("Registry tests", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(result)).To(Equal(1))
-			Expect(result[0].(TestModel).Name).To(Equal("some name"))
+			Expect(result[0].(*TestModel).Name).To(Equal("some name"))
 		})
 	})
 
@@ -38,7 +38,7 @@ var _ = Describe("Registry tests", func() {
 			TestType, err := r.NewType(&TestModel{}, "test_models")
 			Expect(err).NotTo(HaveOccurred())
 
-			TestType.Create(TestModel{
+			TestType.Create(&TestModel{
 				Name: "some name",
 			})
 			resultT, err := TestType.Get(QueryAttribute{
@@ -56,22 +56,22 @@ var _ = Describe("Registry tests", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(resultQ)).To(Equal(len(resultT)))
-			Expect(resultQ[0].(TestModel).Name).
-				To(Equal(resultT[0].(TestModel).Name))
+			Expect(resultQ[0].(*TestModel).Name).
+				To(Equal(resultT[0].(*TestModel).Name))
 		})
 	})
 
 	Describe("Associations", func() {
-		FIt("Get() should get nested types ", func() {
+		It("Get() should get nested types ", func() {
 			type Y struct {
 				ID   string `registry:"id"`
 				Attr string `registry:"attr"`
-				XID  string `registry:"xy"`
+				XID  string `registry:"x_id"`
 			}
 			type X struct {
-				ID   string `registry:"id,xy"`
+				ID   string `registry:"id"`
 				Name string `registry:"name"`
-				Ys   []Y    `registry:"xy"`
+				Ys   []Y    `registry:"ys"`
 			}
 
 			// registering types
@@ -84,8 +84,8 @@ var _ = Describe("Registry tests", func() {
 
 			// maybe one can trigger the other?
 			// or maybe only needs one, and scrap the other
-			XType.HasMany(YType, "xy")
-			YType.BelongsTo(XType, "xy")
+			XType.HasMany(YType, "ys", "x_id", "id")
+			YType.BelongsTo(XType, "x_id", "ys", "id")
 
 			// creating instances
 			x := &X{
@@ -100,7 +100,7 @@ var _ = Describe("Registry tests", func() {
 
 			// checking if y instance was created
 			resultY, err := YType.Get(QueryAttribute{
-				Field:     "xy",
+				Field:     "x_id",
 				Value:     x.ID,
 				Condition: Conditions.Equals,
 			})
@@ -109,7 +109,7 @@ var _ = Describe("Registry tests", func() {
 			Expect(resultY[0].(*Y).Attr).To(Equal("some attr"))
 
 			// checking if x instance was created
-			result, err := XType.With("xy").Get(QueryAttribute{
+			result, err := XType.With("ys").Get(QueryAttribute{
 				Field:     "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,

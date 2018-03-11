@@ -38,35 +38,39 @@ var AssociationTypes = struct {
 
 // Association describes an association a *Type has with another *Type
 type Association struct {
-	atype AssociationType
-	with  *Type
-	ref   string
+	atype    AssociationType
+	with     *Type
+	selfRef  string
+	otherRef string
+	using    string
 }
 
 func (t *Type) createAssociation(
-	o *Type, ref string, atype AssociationType,
+	o *Type, selfRef, otherRef, using string, atype AssociationType,
 ) error {
 	t.associations = append(t.associations, Association{
-		atype: atype,
-		with:  o,
-		ref:   ref,
+		atype:    atype,
+		with:     o,
+		selfRef:  selfRef,
+		otherRef: otherRef,
+		using:    using,
 	})
 	return nil
 }
 
-func (t *Type) HasMany(o *Type, ref string) error {
-	return t.createAssociation(o, ref, AssociationTypes.HasMany)
+func (t *Type) HasMany(o *Type, selfRef, otherRef, using string) error {
+	return t.createAssociation(o, selfRef, otherRef, using, AssociationTypes.HasMany)
 }
 
-func (t *Type) BelongsTo(o *Type, ref string) error {
-	return t.createAssociation(o, ref, AssociationTypes.BelongsTo)
+func (t *Type) BelongsTo(o *Type, selfRef, otherRef, using string) error {
+	return t.createAssociation(o, selfRef, otherRef, using, AssociationTypes.BelongsTo)
 }
 
-func (t *Type) With(refs ...string) query {
+func (t *Type) With(selfRefs ...string) query {
 	as := []Association{}
-	for _, r := range refs {
-		a := t.associationFromRef(r)
-		if a.ref != r {
+	for _, r := range selfRefs {
+		a := t.associationFromSelfRef(r)
+		if a.selfRef != r {
 			continue
 		}
 		as = append(as, a)
@@ -74,9 +78,9 @@ func (t *Type) With(refs ...string) query {
 	return query{rt: t, associations: as}
 }
 
-func (t *Type) associationFromRef(r string) Association {
+func (t *Type) associationFromSelfRef(r string) Association {
 	for _, a := range t.associations {
-		if a.ref == r {
+		if a.selfRef == r {
 			return a
 		}
 	}

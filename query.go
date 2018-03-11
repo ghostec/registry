@@ -12,17 +12,19 @@ type query struct {
 }
 
 func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
-	// first for one, then for all
-	shallow, _ := q.rt.Get(qa...)
+	shallow, err := q.rt.Get(qa...)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, a := range q.associations {
 		for _, s := range shallow {
 			r, _ := a.with.Get(QueryAttribute{
-				Field:     a.ref, // Y.XID, 'use',
-				Value:     q.refValueForAssociation(a, s),
+				Field:     a.otherRef,
+				Value:     q.usingValueForAssociation(a, s),
 				Condition: Conditions.Equals,
 			})
-			setValueInFieldWithTag(s, r, a.ref)
+			setValueInFieldWithTag(s, r, a.selfRef)
 		}
 	}
 
@@ -48,7 +50,7 @@ func setValueInFieldWithTag(s interface{}, v []interface{}, ref string) {
 	}
 }
 
-func (q query) refValueForAssociation(
+func (q query) usingValueForAssociation(
 	a Association, s interface{},
 ) interface{} {
 	t := reflect.ValueOf(s).Elem().Type()
@@ -57,7 +59,7 @@ func (q query) refValueForAssociation(
 		if tag, ok := f.Tag.Lookup("registry"); ok {
 			parts := strings.Split(tag, ",")
 			for _, ps := range parts {
-				if ps == a.ref {
+				if ps == a.using {
 					return reflect.ValueOf(s).Elem().FieldByName(f.Name).Interface()
 				}
 			}

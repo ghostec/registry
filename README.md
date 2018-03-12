@@ -27,11 +27,14 @@ book = results[0].(Book)
 ## TODO:
 
 - [x] HasMany
-- [] HasOne
-- [] Recursive Get HasMany/HasOne
-- [] ManyToMany
-- [] PostgresStorage
+- [  ] HasOne
+- [  ] StorageEngine Update
+- [  ] StorageEngine Delete
+- [  ] StorageCue string -> interface{}
+- [  ] Recursive Get HasMany/HasOne
+- [  ] ManyToMany
+- [  ] PostgresStorage
 
 minor:
 
-- [] NewType name (remove ptr *main.X)
+- [  ] NewType name (remove ptr *main.X)

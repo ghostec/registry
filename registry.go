@@ -22,21 +22,33 @@ func New(s StorageEngine) *Registry {
 // NewType registers a new type in a Registry
 func (r *Registry) NewType(structure interface{}, cue StorageCue) (*Type, error) {
 	t := &Type{
+		name:       reflect.TypeOf(structure).String(),
 		structure:  structure,
 		registry:   r,
 		storageCue: cue,
+		fieldTag:   map[string]string{},
+		tagField:   map[string]string{},
 	}
-	name := reflect.TypeOf(structure).String()
+
+	st := reflect.Indirect(reflect.ValueOf(structure)).Type()
+	for i := 0; i < st.NumField(); i++ {
+		f := st.Field(i)
+		if tag, ok := f.Tag.Lookup("registry"); ok {
+			t.fieldTag[f.Name] = tag
+			t.tagField[tag] = f.Name
+		}
+	}
+
 	if err := r.storage.NewType(t); err != nil {
 		return nil, err
 	}
-	r.types[name] = t
+	r.types[t.name] = t
 	return t, nil
 }
 
 // QueryAttribute is used by StorageEngine to query instances of a Type
 type QueryAttribute struct {
-	Field     string
+	Tag       string
 	Value     interface{}
 	Condition Condition
 }

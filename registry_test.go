@@ -21,7 +21,7 @@ var _ = Describe("Registry tests", func() {
 				Name: "some name",
 			})
 			result, err := TestType.Get(QueryAttribute{
-				Field:     "name",
+				Tag:       "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,
 			})
@@ -43,7 +43,7 @@ var _ = Describe("Registry tests", func() {
 			original.Name = "changed name"
 
 			result, err := TestType.Get(QueryAttribute{
-				Field:     "name",
+				Tag:       "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,
 			})
@@ -64,7 +64,7 @@ var _ = Describe("Registry tests", func() {
 				Name: "some name",
 			})
 			resultT, err := TestType.Get(QueryAttribute{
-				Field:     "name",
+				Tag:       "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,
 			})
@@ -72,7 +72,7 @@ var _ = Describe("Registry tests", func() {
 
 			query := &query{rt: TestType}
 			resultQ, err := query.Get(QueryAttribute{
-				Field:     "name",
+				Tag:       "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,
 			})
@@ -122,7 +122,7 @@ var _ = Describe("Registry tests", func() {
 
 			// checking if y instance was created
 			resultY, err := YType.Get(QueryAttribute{
-				Field:     "x_id",
+				Tag:       "x_id",
 				Value:     x.ID,
 				Condition: Conditions.Equals,
 			})
@@ -132,7 +132,7 @@ var _ = Describe("Registry tests", func() {
 
 			// checking if x instance was created
 			result, err := XType.With("ys").Get(QueryAttribute{
-				Field:     "name",
+				Tag:       "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,
 			})

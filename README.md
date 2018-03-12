@@ -23,3 +23,15 @@ results, _ := BookType.Get(&QueryAttribute{
 // results = []interface{}{Book{Name: "Alice in the rabbit's hole"}}
 book = results[0].(Book)
 ```
+
+## TODO:
+
+- [x] HasMany
+- [] HasOne
+- [] Recursive Get HasMany/HasOne
+- [] ManyToMany
+- [] PostgresStorage
+
+minor:
+
+- [] NewType name (remove ptr *main.X)

@@ -36,7 +36,7 @@ func (s *MemoryStorage) Get(
 	r := []interface{}{}
 
 	for _, x := range s.data[t.name] {
-		if s.applyGetFilter(x, q) {
+		if s.applyGetFilter(t, x, q) {
 			r = append(r, x)
 		}
 	}
@@ -44,20 +44,17 @@ func (s *MemoryStorage) Get(
 }
 
 func (s *MemoryStorage) applyGetFilter(
-	x interface{}, q []QueryAttribute,
+	t *Type, x interface{}, q []QueryAttribute,
 ) bool {
-	t := reflect.Indirect(reflect.ValueOf(x)).Type()
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		for _, qq := range q {
-			if tag, ok := f.Tag.Lookup("registry"); ok && tag == qq.Field {
-				v := reflect.ValueOf(x).FieldByName(f.Name).Interface()
-				switch qq.Condition {
-				case Conditions.Equals:
-					return qq.Value == v
-				}
+	for _, qq := range q {
+		f := t.tagField[qq.Tag]
+		v := reflect.ValueOf(x).FieldByName(f).Interface()
+		switch qq.Condition {
+		case Conditions.Equals:
+			if !(qq.Value == v) {
+				return false
 			}
 		}
 	}
-	return false
+	return true
 }

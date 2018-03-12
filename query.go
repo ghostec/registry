@@ -20,11 +20,11 @@ func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
 	for _, a := range q.associations {
 		for i, s := range r {
 			nested, _ := a.with.Get(QueryAttribute{
-				Field:     a.otherRef,
+				Tag:       a.otherRef,
 				Value:     q.usingValueForAssociation(a, s),
 				Condition: Conditions.Equals,
 			})
-			r[i] = newWithValueInFieldWithTag(s, nested, a.selfRef)
+			r[i] = newWithValueInFieldWithTag(q.rt, s, nested, a.selfRef)
 		}
 	}
 
@@ -32,7 +32,7 @@ func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
 }
 
 func newWithValueInFieldWithTag(
-	s interface{}, v []interface{}, ref string,
+	t *Type, s interface{}, v []interface{}, ref string,
 ) interface{} {
 	if len(v) == 0 {
 		return s
@@ -51,13 +51,8 @@ func newWithValueInFieldWithTag(
 	}
 
 	// search field in n with ref tag in registry and set it
-	for i := 0; i < sType.NumField(); i++ {
-		f := sType.Field(i)
-		if tag, ok := f.Tag.Lookup("registry"); ok && tag == ref {
-			n.Elem().FieldByName(f.Name).Set(sl)
-			break
-		}
-	}
+	f := t.tagField[ref]
+	n.Elem().FieldByName(f).Set(sl)
 
 	return n.Elem().Interface()
 }

@@ -18,6 +18,8 @@ type Type struct {
 	// to access the Type's instances (eg. table name in Postgres)
 	storageCue   StorageCue
 	associations []Association
+	fieldTag     map[string]string
+	tagField     map[string]string
 }
 
 // Create is a wrapper over t.registry.storage.Create

@@ -5,16 +5,31 @@ import (
 	"strings"
 )
 
+type queryNestingType string
+
+var queryNestingTypes = struct {
+	eager  queryNestingType
+	lazy   queryNestingType
+	custom queryNestingType
+}{
+	eager:  "eager",
+	lazy:   "lazy",
+	custom: "custom",
+}
+
 type query struct {
+	nestingType  queryNestingType
 	rt           *Type
-	attributes   []QueryAttribute
 	associations []Association
 }
 
 func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
-	r, err := q.rt.Get(qa...)
+	r, err := q.rt.registry.storage.Get(q.rt, qa...)
 	if err != nil {
 		return nil, err
+	}
+	if q.nestingType == queryNestingTypes.lazy {
+		return r, nil
 	}
 
 	for _, a := range q.associations {

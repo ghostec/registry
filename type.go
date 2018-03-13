@@ -28,9 +28,21 @@ func (t *Type) Create(data interface{}) error {
 	return t.registry.storage.Create(t, cpy)
 }
 
-// Get is a wrapper over t.registry.storage.Get
+// Get is a wrapper over query.Get with lazy loading
 func (t *Type) Get(q ...QueryAttribute) ([]interface{}, error) {
-	return t.registry.storage.Get(t, q...)
+	return query{
+		nestingType: queryNestingTypes.lazy,
+		rt:          t,
+	}.Get(q...)
+}
+
+// Eager is a wrapper over query.Get with eager loading
+func (t *Type) Eager() query {
+	return query{
+		nestingType:  queryNestingTypes.eager,
+		rt:           t,
+		associations: t.associations,
+	}
 }
 
 // AssociationType is a type alias
@@ -75,6 +87,7 @@ func (t *Type) BelongsTo(o *Type, selfRef, otherRef, using string) error {
 	return t.createAssociation(o, selfRef, otherRef, using, AssociationTypes.BelongsTo)
 }
 
+// With is a wrapper over query.Get with custom loading
 func (t *Type) With(selfRefs ...string) query {
 	as := []Association{}
 	for _, r := range selfRefs {
@@ -84,7 +97,11 @@ func (t *Type) With(selfRefs ...string) query {
 		}
 		as = append(as, a)
 	}
-	return query{rt: t, associations: as}
+	return query{
+		nestingType:  queryNestingTypes.custom,
+		rt:           t,
+		associations: as,
+	}
 }
 
 func (t *Type) associationFromSelfRef(r string) Association {

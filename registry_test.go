@@ -131,18 +131,32 @@ var _ = Describe("Registry tests", func() {
 			Expect(resultY[0].(Y).Attr).To(Equal("some attr"))
 
 			// checking if x instance was created
-			result, err := XType.With("ys").Get(QueryAttribute{
+			resultW, err := XType.With("ys").Get(QueryAttribute{
 				Tag:       "name",
 				Value:     "some name",
 				Condition: Conditions.Equals,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(len(result)).To(Equal(1))
-			Expect(result[0].(X).Name).To(Equal("some name"))
+			Expect(len(resultW)).To(Equal(1))
+			Expect(resultW[0].(X).Name).To(Equal("some name"))
 
 			// checking if X.Ys[] was filled (Get() eagerly)
-			Expect(len(result[0].(X).Ys)).To(Equal(1))
-			Expect(result[0].(X).Ys[0].Attr).To(Equal("some attr"))
+			Expect(len(resultW[0].(X).Ys)).To(Equal(1))
+			Expect(resultW[0].(X).Ys[0].Attr).To(Equal("some attr"))
+
+			// checking if x instance was created
+			resultE, err := XType.Eager().Get(QueryAttribute{
+				Tag:       "name",
+				Value:     "some name",
+				Condition: Conditions.Equals,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(resultE)).To(Equal(1))
+			Expect(resultE[0].(X).Name).To(Equal("some name"))
+
+			// checking if X.Ys[] was filled (Get() eagerly)
+			Expect(len(resultE[0].(X).Ys)).To(Equal(1))
+			Expect(resultE[0].(X).Ys[0].Attr).To(Equal("some attr"))
 		})
 	})
 })

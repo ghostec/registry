@@ -84,33 +84,36 @@ var _ = Describe("Registry tests", func() {
 	})
 
 	Describe("Associations", func() {
-		It("Get() should get nested types ", func() {
-			type Y struct {
-				ID   string `registry:"id"`
-				Attr string `registry:"attr"`
-				XID  string `registry:"x_id"`
-			}
-			type X struct {
-				ID   string `registry:"id"`
-				Name string `registry:"name"`
-				Ys   []Y    `registry:"ys"`
-			}
+		type Y struct {
+			ID   string `registry:"id"`
+			Attr string `registry:"attr"`
+			XID  string `registry:"x_id"`
+		}
+		type X struct {
+			ID   string `registry:"id"`
+			Name string `registry:"name"`
+			Ys   []Y    `registry:"ys"`
+		}
+		var (
+			s     StorageEngine
+			r     *Registry
+			XType *Type
+			YType *Type
+			x     *X
+		)
 
-			// registering types
-			s := NewMemoryStorage()
-			r := New(s)
-			XType, err := r.NewType(&X{}, "xs")
+		BeforeEach(func() {
+			var err error
+			s = NewMemoryStorage()
+			r = New(s)
+			XType, err = r.NewType(&X{}, "xs")
 			Expect(err).NotTo(HaveOccurred())
-			YType, err := r.NewType(&Y{}, "ys")
+			YType, err = r.NewType(&Y{}, "ys")
 			Expect(err).NotTo(HaveOccurred())
-
-			// maybe one can trigger the other?
-			// or maybe only needs one, and scrap the other
 			XType.HasMany(YType, "ys", "x_id", "id")
 			YType.BelongsTo(XType, "x_id", "ys", "id")
 
-			// creating instances
-			x := X{
+			x = &X{
 				ID:   "xID",
 				Name: "some name",
 			}
@@ -119,17 +122,9 @@ var _ = Describe("Registry tests", func() {
 				Attr: "some attr",
 				XID:  x.ID,
 			})
+		})
 
-			// checking if y instance was created
-			resultY, err := YType.Get(QueryAttribute{
-				Tag:       "x_id",
-				Value:     x.ID,
-				Condition: Conditions.Equals,
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(resultY)).To(Equal(1))
-			Expect(resultY[0].(Y).Attr).To(Equal("some attr"))
-
+		It("With(...).Get(...) should get nested types", func() {
 			// checking if x instance was created
 			resultW, err := XType.With("ys").Get(QueryAttribute{
 				Tag:       "name",
@@ -143,7 +138,9 @@ var _ = Describe("Registry tests", func() {
 			// checking if X.Ys[] was filled (Get() eagerly)
 			Expect(len(resultW[0].(X).Ys)).To(Equal(1))
 			Expect(resultW[0].(X).Ys[0].Attr).To(Equal("some attr"))
+		})
 
+		It("Eager().Get(...) should get nested types", func() {
 			// checking if x instance was created
 			resultE, err := XType.Eager().Get(QueryAttribute{
 				Tag:       "name",

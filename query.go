@@ -18,9 +18,9 @@ var queryNestingTypes = struct {
 }
 
 type query struct {
-	nestingType  queryNestingType
-	rt           *Type
-	associations []Association
+	nestingType queryNestingType
+	rt          *Type
+	withNesting []string
 }
 
 func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
@@ -32,9 +32,29 @@ func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
 		return r, nil
 	}
 
-	for _, a := range q.associations {
+	associations := []Association{}
+	if q.nestingType == queryNestingTypes.eager {
+		associations = q.rt.associations
+	} else {
+		for _, nestedTag := range q.withNesting {
+			a, err := q.rt.associationFromTag(nestedTag)
+			if err != nil {
+				return nil, err
+			}
+			associations = append(associations, a)
+		}
+	}
+
+	var qq query
+	for _, a := range associations {
 		for i, s := range r {
-			nested, _ := a.with.Get(QueryAttribute{
+			if q.nestingType == queryNestingTypes.eager {
+				qq = a.with.Eager()
+			} else {
+				// filter nesting to send in With(...)
+				qq = a.with.With()
+			}
+			nested, _ := qq.Get(QueryAttribute{
 				Tag:       a.otherRef,
 				Value:     q.usingValueForAssociation(a, s),
 				Condition: Conditions.Equals,

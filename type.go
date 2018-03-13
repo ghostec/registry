@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/mohae/deepcopy"
@@ -12,8 +13,7 @@ type Type struct {
 	name string
 	// structure is an instance of the underlying struct
 	structure interface{}
-	// TODO: cache structure fields/tags and relations
-	registry *Registry
+	registry  *Registry
 	// storageCue is the information used by a StorageEngine implementation
 	// to access the Type's instances (eg. table name in Postgres)
 	storageCue   StorageCue
@@ -39,9 +39,17 @@ func (t *Type) Get(q ...QueryAttribute) ([]interface{}, error) {
 // Eager is a wrapper over query.Get with eager loading
 func (t *Type) Eager() query {
 	return query{
-		nestingType:  queryNestingTypes.eager,
-		rt:           t,
-		associations: t.associations,
+		nestingType: queryNestingTypes.eager,
+		rt:          t,
+	}
+}
+
+// With is a wrapper over query.Get with custom loading
+func (t *Type) With(selfRefs ...string) query {
+	return query{
+		nestingType: queryNestingTypes.custom,
+		rt:          t,
+		withNesting: selfRefs,
 	}
 }
 
@@ -87,28 +95,11 @@ func (t *Type) BelongsTo(o *Type, selfRef, otherRef, using string) error {
 	return t.createAssociation(o, selfRef, otherRef, using, AssociationTypes.BelongsTo)
 }
 
-// With is a wrapper over query.Get with custom loading
-func (t *Type) With(selfRefs ...string) query {
-	as := []Association{}
-	for _, r := range selfRefs {
-		a := t.associationFromSelfRef(r)
-		if a.selfRef != r {
-			continue
-		}
-		as = append(as, a)
-	}
-	return query{
-		nestingType:  queryNestingTypes.custom,
-		rt:           t,
-		associations: as,
-	}
-}
-
-func (t *Type) associationFromSelfRef(r string) Association {
+func (t *Type) associationFromTag(tag string) (Association, error) {
 	for _, a := range t.associations {
-		if a.selfRef == r {
-			return a
+		if a.selfRef == tag {
+			return a, nil
 		}
 	}
-	return Association{}
+	return Association{}, fmt.Errorf("Association doesn't exist for tag %s", tag)
 }

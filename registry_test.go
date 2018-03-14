@@ -124,22 +124,6 @@ var _ = Describe("Registry tests", func() {
 			})
 		})
 
-		It("With(...).Get(...) should get nested types", func() {
-			// checking if x instance was created
-			resultW, err := XType.With("ys").Get(QueryAttribute{
-				Tag:       "name",
-				Value:     "some name",
-				Condition: Conditions.Equals,
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(resultW)).To(Equal(1))
-			Expect(resultW[0].(X).Name).To(Equal("some name"))
-
-			// checking if X.Ys[] was filled (Get() eagerly)
-			Expect(len(resultW[0].(X).Ys)).To(Equal(1))
-			Expect(resultW[0].(X).Ys[0].Attr).To(Equal("some attr"))
-		})
-
 		It("Eager().Get(...) should get nested types", func() {
 			// checking if x instance was created
 			resultE, err := XType.Eager().Get(QueryAttribute{

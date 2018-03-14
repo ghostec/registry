@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/mohae/deepcopy"
@@ -44,15 +43,6 @@ func (t *Type) Eager() query {
 	}
 }
 
-// With is a wrapper over query.Get with custom loading
-func (t *Type) With(selfRefs ...string) query {
-	return query{
-		nestingType: queryNestingTypes.custom,
-		rt:          t,
-		withNesting: selfRefs,
-	}
-}
-
 // AssociationType is a type alias
 type AssociationType string
 
@@ -67,39 +57,34 @@ var AssociationTypes = struct {
 
 // Association describes an association a *Type has with another *Type
 type Association struct {
-	atype    AssociationType
-	with     *Type
-	selfRef  string
-	otherRef string
-	using    string
+	atype   AssociationType
+	from    *Type
+	with    *Type
+	fromTag string
+	withTag string
+	using   string
 }
 
 func (t *Type) createAssociation(
-	o *Type, selfRef, otherRef, using string, atype AssociationType,
+	w *Type, fromTag, withTag, using string, atype AssociationType,
 ) error {
 	t.associations = append(t.associations, Association{
-		atype:    atype,
-		with:     o,
-		selfRef:  selfRef,
-		otherRef: otherRef,
-		using:    using,
+		atype:   atype,
+		from:    t,
+		with:    w,
+		fromTag: fromTag,
+		withTag: withTag,
+		using:   using,
 	})
 	return nil
 }
 
-func (t *Type) HasMany(o *Type, selfRef, otherRef, using string) error {
-	return t.createAssociation(o, selfRef, otherRef, using, AssociationTypes.HasMany)
+// HasMany creates an association (t has_many w)
+func (t *Type) HasMany(w *Type, fromTag, withTag, using string) error {
+	return t.createAssociation(w, fromTag, withTag, using, AssociationTypes.HasMany)
 }
 
-func (t *Type) BelongsTo(o *Type, selfRef, otherRef, using string) error {
-	return t.createAssociation(o, selfRef, otherRef, using, AssociationTypes.BelongsTo)
-}
-
-func (t *Type) associationFromTag(tag string) (Association, error) {
-	for _, a := range t.associations {
-		if a.selfRef == tag {
-			return a, nil
-		}
-	}
-	return Association{}, fmt.Errorf("Association doesn't exist for tag %s", tag)
+// BelongsTo creates an association (t belongs_to w)
+func (t *Type) BelongsTo(w *Type, fromTag, withTag, using string) error {
+	return t.createAssociation(w, fromTag, withTag, using, AssociationTypes.BelongsTo)
 }

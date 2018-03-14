@@ -2,7 +2,6 @@ package main
 
 import (
 	"reflect"
-	"strings"
 )
 
 type queryNestingType string
@@ -20,7 +19,6 @@ var queryNestingTypes = struct {
 type query struct {
 	nestingType queryNestingType
 	rt          *Type
-	withNesting []string
 }
 
 func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
@@ -32,42 +30,27 @@ func (q query) Get(qa ...QueryAttribute) ([]interface{}, error) {
 		return r, nil
 	}
 
-	associations := []Association{}
+	var associations []Association
 	if q.nestingType == queryNestingTypes.eager {
 		associations = q.rt.associations
-	} else {
-		for _, nestedTag := range q.withNesting {
-			a, err := q.rt.associationFromTag(nestedTag)
-			if err != nil {
-				return nil, err
-			}
-			associations = append(associations, a)
-		}
 	}
 
-	var qq query
 	for _, a := range associations {
 		for i, s := range r {
-			if q.nestingType == queryNestingTypes.eager {
-				qq = a.with.Eager()
-			} else {
-				// filter nesting to send in With(...)
-				qq = a.with.With()
-			}
-			nested, _ := qq.Get(QueryAttribute{
-				Tag:       a.otherRef,
+			nested, _ := a.with.Eager().Get(QueryAttribute{
+				Tag:       a.withTag,
 				Value:     q.usingValueForAssociation(a, s),
 				Condition: Conditions.Equals,
 			})
-			r[i] = newWithValueInFieldWithTag(q.rt, s, nested, a.selfRef)
+			r[i] = fillValueInFieldWithTag(q.rt, s, nested, a.fromTag)
 		}
 	}
 
 	return r, nil
 }
 
-func newWithValueInFieldWithTag(
-	t *Type, s interface{}, v []interface{}, ref string,
+func fillValueInFieldWithTag(
+	t *Type, s interface{}, v []interface{}, fromTag string,
 ) interface{} {
 	if len(v) == 0 {
 		return s
@@ -86,7 +69,7 @@ func newWithValueInFieldWithTag(
 	}
 
 	// search field in n with ref tag in registry and set it
-	f := t.tagField[ref]
+	f := t.tagField[fromTag]
 	n.Elem().FieldByName(f).Set(sl)
 
 	return n.Elem().Interface()
@@ -95,17 +78,6 @@ func newWithValueInFieldWithTag(
 func (q query) usingValueForAssociation(
 	a Association, s interface{},
 ) interface{} {
-	t := reflect.ValueOf(s).Type()
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if tag, ok := f.Tag.Lookup("registry"); ok {
-			parts := strings.Split(tag, ",")
-			for _, ps := range parts {
-				if ps == a.using {
-					return reflect.ValueOf(s).FieldByName(f.Name).Interface()
-				}
-			}
-		}
-	}
-	return nil
+	f := a.from.tagField[a.using]
+	return reflect.ValueOf(s).FieldByName(f).Interface()
 }
